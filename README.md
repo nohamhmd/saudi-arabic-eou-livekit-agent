@@ -26,6 +26,7 @@ that can be imported into **any LiveKit agent** or real-time conversational syst
 git clone <repo-url>
 cd saudi-eou-project
 pip install -r requirements.txt
+--
 
 ## To run the priject: 
 
