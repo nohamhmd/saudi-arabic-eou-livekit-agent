@@ -1,0 +1,17 @@
+# Data processing & EOU
+pandas
+numpy
+scikit-learn
+
+# Model fine-tuning
+torch
+transformers
+datasets
+tqdm
+
+# LiveKit Agent
+livekit
+livekit-agents
+livekit-plugins-openai
+livekit-plugins-deepgram
+silero-vad
