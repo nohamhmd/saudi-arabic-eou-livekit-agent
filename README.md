@@ -1,100 +1,128 @@
-# Saudi Arabic End-of-Utterance (EOU) Detection & LiveKit Agent
+# Saudi Arabic End-of-Utterance (EOU) LiveKit Agent
 
-This project fine-tunes a lightweight Arabic Transformer to detect **End-of-Utterance (EOU)** in Saudi Arabic conversational text and speech. The model is integrated into a LiveKit agent that handles **real-time voice and text interactions**, including code-switching with English.
+A real-time conversational AI system that detects **End-of-Utterance (EOU)** in **Saudi Arabic**, fine-tuned on a dialect-specific dataset and integrated with **LiveKit** for live voice interactions.
 
-## Key Features
-- **Dialect-Specific:** Fine-tuned on Saudilang SCC corpus for Saudi Arabic and code-switching.  
-- **Real-Time Turn-Taking:** Low-latency EOU detection.  
-- **LiveKit Integration:** Full voice/text support.  
-- **Voice Capabilities:**  
-  - Input: Arabic speech recognition via **Whisper STT**  
-  - Output: Saudi dialect responses via TTS  
+This project includes:
+
+* A data processing pipeline for EOU dataset generation
+* Fine-tuning a lightweight Arabic BERT model
+* A LiveKit conversational agent with speech, EOU detection, and LLM response generation
+* A reusable SDK for EOU inference
 
 ---
-## Saudi EOU SDK (Reusable Module)
 
-The `saudi_eou_SDK` module is a lightweight, reusable End-of-Utterance detection SDK
-that can be imported into **any LiveKit agent** or real-time conversational system.
+## 🚀 Quick Start
 
-## Setup
+### 1. Clone the Repository
 
-**Prerequisites:**  
-- Docker (for LiveKit server)  
-
-**Clone repository:**  
 ```bash
-git clone <repo-url>
-cd saudi-eou-project
+git clone https://github.com/nohamhmd/saudi-arabic-eou-livekit-agent.git
+cd saudi-arabic-eou-livekit-agent
+```
+
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
---
+```
 
-## To run the priject: 
+---
 
-**1. Data Processing**
+## 📊 Data Processing
 
-Navigate to the folder:
-cd saudi-eou-data-processing
+Generate the EOU dataset from the Saudilang Code-Switch Corpus:
 
-Run processing script:
-python process_data.py --input <path/to/raw_dataset.csv> --output <path/to/preprocessed_dataset.csv>
+```bash
+python saudi-eou-data-processing/process_data.py \
+  --input <path/to/Saudilang.csv> \
+  --output train_eou_saudi_prepared.csv
+```
 
-Processing Steps:
+### Dataset Creation Logic
 
-Cleans missing values.
+* Clean Saudi Arabic conversational text
+* Remove fillers and noise tokens
+* Generate **positive samples** (complete utterances)
+* Generate **negative samples** (randomly truncated utterances)
+* Final dataset is balanced for binary classification
 
-Filters single-word filler segments.
+---
 
-Generates synthetic negative samples (truncated = label 0).
+## 🧠 Model Fine-Tuning
 
-Keeps complete utterances as positive samples (label 1).
+Train the EOU classifier:
 
+```bash
+python saudi-eou-model-training/train_model.py \
+  --data train_eou_saudi_prepared.csv \
+  --model asafaya/bert-mini-arabic \
+  --output ./outputs/best_saudi_eou_model
+```
+---
 
-**2. Model Fine-Tuning**
+## 🎙️ LiveKit Conversational Agent
 
-Fine-tunes an AraBERT-based Mini-BERT model for binary EOU classification.
+The fine-tuned EOU model is integrated into a **LiveKit agent** for real-time conversations.
 
-Navigate to the folder:
-cd ../saudi-eou-training
+### Prerequisites
 
-Run training:
-python train_model.py \
-    --data <path/to/dataset.csv> \
-    --model asafaya/bert-mini-arabic \
-    --output outputs/best_saudi_eou_model
+* LiveKit server
+* OpenAI API key (for Whisper + LLM)
+* LiveKit API key & secret:
+    If deploying on the cloud, generate them via the cloud dashboard.
+  
+    If running a local server, generate them with Docker:
+    ```bash
+    docker run --rm livekit/livekit-server generate-keys
+    ```
 
-Configuration:
+### Start LiveKit Server
 
-Train/Eval split: 80/20
+```bash
+docker run --rm \
+  -p 7880:7880 \
+  -p 7881:7881 \
+  livekit/livekit-server \
+  --keys <YOUR_API_KEY>:<YOUR_API_SECRET>
+```
 
-Max sequence length: 128 tokens
+---
 
-Metrics: F1, Precision, Recall, Accuracy
+### Run the Agent (Console Mode)
 
-Early stopping: 3 epochs without improvement
+```bash
+python saudi-eou-livekit-agent/livekit_agent.py console
+```
 
-Output: Best model and tokenizer saved in outputs.
+---
 
-**3. LiveKit Agent**
+## 🗣️ Speech & Conversation Pipeline
 
-Integrates the fine-tuned EOU model into a real-time voice/text agent.
+1. **LiveKit** streams audio in real time
+2. **OpenAI Whisper** performs incremental speech-to-text
+3. After each partial transcription, the **EOU model** predicts whether the user has finished speaking
+4. Once EOU is detected:
 
-Navigate to the folder:
-cd ../saudi-eou-livekit-agent
+   * The text is sent to an LLM (OpenAI)
+   * Instructions enforce friendly Saudi dialect responses
+5. **Text-to-Speech (TTS)** outputs audio replies
 
-Start LiveKit server (Docker):
+---
 
-docker run --rm -p 7880:7880 -p 7881:7881 livekit/livekit-server --keys <API_KEY>:<API_SECRET>
+## 📦 EOU SDK Usage
 
-Run the agent (console mode):
+The project includes a reusable SDK for EOU inference:
 
-python livekit_agent.py console
+```python
+from saudi_eou_SDK.detector import EOUPredictor
+```
 
-Workflow:
+---
 
-Input: Receives voice (Whisper STT) or text.
+## 🧩 Design Choices
 
-Detection: Fine-tuned EOU model identifies end of turn.
-
-Response: Generates Saudi Arabic text.
-
-Output: Reads response aloud (TTS).
+* **Mini-BERT** for low-latency inference
+* Synthetic EOU labeling to simulate real-time speech behavior
+* Modular architecture (speech, model, LLM are swappable)
+* Saudi dialect focus with English code-switching support
+---
